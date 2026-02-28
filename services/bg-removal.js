@@ -10,14 +10,24 @@ import path from 'path';
 // adaptive configuration for hosting.
 // Allow local models if they exist (good for persistent hosting like Hostinger), 
 // otherwise allow remote download (good for Vercel/first-time).
-env.allowLocalModels = true;
+const IS_VERCEL = !!process.env.VERCEL;
+
+env.allowLocalModels = !IS_VERCEL; // If on Vercel, always fetch remote to avoid large local repos
 env.allowRemoteModels = true; 
 env.cacheDir = path.join(os.tmpdir(), '.cache');
 
-// Use 1 thread for stability on shared CPU environments. 
-// Higher thread counts (4+) often crash on limited hosting quotas.
-env.backends.onnx.wasm.numThreads = 1;
-env.backends.onnx.wasm.simd = true;
+// If we are on Vercel, we must use the WASM backend for ONNX. 
+// Standard serverless environments often lack the shared library (libonnxruntime.so) 
+// required for the native Node.js backend.
+if (IS_VERCEL) {
+    env.backends.onnx.gpu = false;
+    env.backends.onnx.wasm.numThreads = 1;
+    env.backends.onnx.wasm.proxy = false;
+} else {
+    // Local / VPS environments can use 1 thread for stability but native performance
+    env.backends.onnx.wasm.numThreads = 1;
+    env.backends.onnx.wasm.simd = true;
+}
 
 let model = null;
 let processor = null;

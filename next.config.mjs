@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    serverExternalPackages: ['@xenova/transformers', 'jimp'],
+    serverExternalPackages: ['jimp'],
     output: 'standalone',
 };
 
